@@ -53,27 +53,15 @@ class Visit : BaseEntity() {
     @Column(name = "pet_id")
     var petId: Int? = null
 
-    @Transient
-    var reportRef: String? = null
+    /**
+     * Forward the report reference this visit carries so the caller can resolve
+     * it. The reference travels as the return value, not as stored visit state.
+     */
+    fun attachReportRef(ref: String): String = ref
 
     /**
-     * Register a pending report reference for this visit and return the visit
-     * so the caller can continue resolving the report in a fluent step.
+     * Forward the raw visit-bundle payload this visit carries so the caller can
+     * import it. The payload travels as the return value, not as stored state.
      */
-    fun attachReportRef(ref: String): Visit {
-        this.reportRef = ref
-        return this
-    }
-
-    @Transient
-    var bundleBlob: String? = null
-
-    /**
-     * Register a raw visit-bundle payload for this visit and return the visit
-     * so the caller can continue importing the bundle in a fluent step.
-     */
-    fun attachBundlePayload(bundle: String): Visit {
-        this.bundleBlob = bundle
-        return this
-    }
+    fun attachBundlePayload(bundle: String): String = bundle
 }

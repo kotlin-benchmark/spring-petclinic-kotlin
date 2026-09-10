@@ -59,44 +59,34 @@ class Pet : NamedEntity() {
         visit.petId = this.id
     }
 
-    @Transient
-    var pendingDocument: String? = null
-
     /**
      * Register a pending document request for this pet and return the
-     * archive-relative path that identifies the requested document.
+     * archive-relative path that identifies the requested document. The
+     * requested name is threaded through as an argument, not stored on the pet.
      */
-    fun attachDocumentRequest(docName: String): String {
-        this.pendingDocument = docName
-        return composeArchiveEntry()
-    }
+    fun attachDocumentRequest(docName: String): String =
+            composeArchiveEntry(docName)
 
     /**
-     * Compose the archive-relative path for this pet's pending document
-     * request, pairing the pet's own name segment with the requested leaf.
+     * Compose the archive-relative path for a requested document, pairing the
+     * pet's own name segment with the requested leaf.
      */
-    fun composeArchiveEntry(): String =
-            qualifiedSegment(pendingDocument ?: "")
+    fun composeArchiveEntry(leaf: String): String =
+            qualifiedSegment(leaf)
 
     /**
-     * Locate the spool storage key for a report attached to one of this pet's
-     * visits. The visit is matched against the pet's own visit list before its
-     * report reference is folded into a key.
+     * Locate the spool storage key for a report reference resolved for this
+     * pet. The reference is supplied by the caller and folded into a key.
      */
-    fun locateReport(visit: Visit): String {
-        val scoped = getVisits().firstOrNull { it === visit } ?: visit
-        return reportKey(scoped.reportRef ?: "")
-    }
+    fun locateReport(ref: String): String =
+            reportKey(ref)
 
     /**
-     * Import a raw visit bundle carried on one of this pet's visits. The visit
-     * is scoped to this pet's own visit list before its staged payload is read
-     * back out and handed to the decoding pipeline.
+     * Import a raw visit bundle for this pet from the supplied payload, which
+     * is passed in by the caller rather than read back off visit state.
      */
-    fun importVisitBundle(visit: Visit): Any? {
-        val scoped = getVisits().firstOrNull { it === visit } ?: visit
-        return stageBundle(scoped.bundleBlob ?: "")
-    }
+    fun importVisitBundle(blob: String): Any? =
+            stageBundle(blob)
 
     /**
      * Normalize the encoded bundle text before it is decoded, trimming stray
