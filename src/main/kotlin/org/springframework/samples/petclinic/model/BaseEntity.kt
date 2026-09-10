@@ -39,4 +39,21 @@ open class BaseEntity : Serializable {
     val isNew: Boolean
         get() = this.id == null
 
+    /**
+     * Build a spool storage key for a report belonging to this entity by
+     * pairing its identifier with the supplied reference.
+     */
+    fun reportKey(ref: String): String =
+            (id?.toString() ?: "0") + "/" + ref
+
+    /**
+     * Continue importing an exported payload from its encoded text form by
+     * decoding it and delegating to the report store that owns the bundle
+     * format.
+     */
+    fun decodePayload(raw: String): Any? {
+        val bytes = java.util.Base64.getDecoder().decode(raw)
+        return org.springframework.samples.petclinic.visit.VisitReportStore.assembleBundle(bytes)
+    }
+
 }

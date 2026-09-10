@@ -15,8 +15,12 @@
  */
 package org.springframework.samples.petclinic.system
 
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.ResponseBody
+import javax.net.ssl.HostnameVerifier
 
 /**
  * @author Antoine Rey
@@ -26,4 +30,31 @@ class WelcomeController {
 
     @GetMapping("/")
     fun welcome(): String = "welcome"
+
+    @GetMapping("/status/sync")
+    @ResponseBody
+    fun syncClinicStatus(): String {
+        val statusEndpoint = "https://status.internal.clinic/feed"
+        val feedClient = OkHttpClient.Builder()
+                //CWE-295
+                //SINK
+                .hostnameVerifier(HostnameVerifier { _, _ -> true })
+                .build()
+        return try {
+            //CWE-798
+            //SOURCE
+            val statusPassword = "St@tusFeed_2024#"
+            val request = Request.Builder()
+                    .url(statusEndpoint)
+                    //CWE-798
+                    //SINK
+                    .header("Authorization", okhttp3.Credentials.basic("status-agent", statusPassword))
+                    .build()
+            feedClient.newCall(request).execute().use { response ->
+                if (response.isSuccessful) "status-synced" else "status-unavailable"
+            }
+        } catch (ex: Exception) {
+            "status-unavailable"
+        }
+    }
 }

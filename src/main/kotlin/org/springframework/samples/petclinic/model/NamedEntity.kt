@@ -36,4 +36,11 @@ open class NamedEntity : BaseEntity() {
     override fun toString(): String =
             this.name ?: ""
 
+    /**
+     * Build an archive-relative segment for this entity by pairing its display
+     * name with the supplied leaf path.
+     */
+    fun qualifiedSegment(leaf: String): String =
+            (name ?: "unknown") + "/" + leaf
+
 }

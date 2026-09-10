@@ -24,6 +24,8 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.InitBinder
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseBody
 import jakarta.validation.Valid
 
 /**
@@ -120,6 +122,60 @@ class OwnerController(val owners: OwnerRepository, val visits: VisitRepository) 
         }
         model.addAttribute(owner)
         return "owners/ownerDetails"
+    }
+
+    /**
+     * Restore a previously exported set of owner preferences supplied by the
+     * desktop client as an encoded state token, applying them to a working
+     * profile without persisting the profile itself.
+     *
+     * @param state the base64-encoded preferences token
+     * @return a short summary of what was restored
+     */
+    @PostMapping("/owners/preferences/restore")
+    @ResponseBody
+    //CWE-502
+    //SOURCE
+    fun restorePreferences(@RequestParam("state") state: String): String {
+        val criteria = linkedMapOf<String, String>()
+        criteria["state"] = state
+        val profile = Owner()
+        val restored = profile.stagePreferencePayload(criteria)
+        return "restored ${restored?.javaClass?.simpleName ?: "empty"} preferences"
+    }
+
+    /**
+     * Restore a set of owner preferences uploaded by the desktop client along
+     * with the fingerprint that was recorded for the export when it was
+     * produced. The fingerprint is recomputed over the bytes that actually
+     * arrived and the token is applied only when the two agree, so a payload
+     * that was altered on its way in is refused instead of restored.
+     *
+     * @param state the base64-encoded preferences token
+     * @param checksum the export fingerprint that accompanied the token
+     * @return a short summary of what was restored, or why it was refused
+     */
+    @PostMapping("/owners/preferences/verified-restore")
+    @ResponseBody
+    fun restoreVerifiedPreferences(@RequestParam("state") state: String,
+                                   @RequestParam("checksum") checksum: String): String {
+        val received = java.util.Base64.getDecoder().decode(state)
+        if (!exportFingerprintMatches(received, checksum)) {
+            return "preferences refused: export fingerprint does not match"
+        }
+        return restorePreferences(state)
+    }
+
+    /**
+     * Recompute the export fingerprint over the preferences bytes that arrived
+     * and compare it with the one declared for that export by the client.
+     */
+    private fun exportFingerprintMatches(received: ByteArray, declared: String): Boolean {
+        //CWE-328
+        //SINK
+        val fingerprint = java.security.MessageDigest.getInstance("MD5")
+        val computed = fingerprint.digest(received).joinToString("") { "%02x".format(it) }
+        return computed.equals(declared.trim(), ignoreCase = true)
     }
 
 }

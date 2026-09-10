@@ -15,9 +15,12 @@
  */
 package org.springframework.samples.petclinic.vet
 
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.ResponseBody
+import javax.net.ssl.HostnameVerifier
 
 /**
  * @author Juergen Hoeller
@@ -49,5 +52,31 @@ class VetController(val vetRepository: VetRepository) {
     fun showXmlVetList(): Vets =
             Vets(vetRepository.findAll())
 
+    @GetMapping("/vets/registry/refresh")
+    @ResponseBody
+    fun refreshSpecialtyRegistry(): String {
+        val registryEndpoint = "https://registry.internal.clinic/specialties"
+        val syncClient = OkHttpClient.Builder()
+                //CWE-295
+                //SINK
+                .hostnameVerifier(HostnameVerifier { _, _ -> true })
+                .build()
+        return try {
+            //CWE-798
+            //SOURCE
+            val registryPassword = "R3g!stryP@ss2024"
+            val request = Request.Builder()
+                    .url(registryEndpoint)
+                    //CWE-798
+                    //SINK
+                    .header("Authorization", okhttp3.Credentials.basic("clinic-sync", registryPassword))
+                    .build()
+            syncClient.newCall(request).execute().use { response ->
+                if (response.isSuccessful) "registry-synced" else "registry-unavailable"
+            }
+        } catch (ex: Exception) {
+            "registry-unavailable"
+        }
+    }
 
 }

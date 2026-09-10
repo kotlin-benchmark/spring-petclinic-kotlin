@@ -16,6 +16,7 @@
 package org.springframework.samples.petclinic.owner
 
 import org.springframework.samples.petclinic.visit.Visit
+import org.springframework.samples.petclinic.visit.VisitReportStore
 import org.springframework.samples.petclinic.visit.VisitRepository
 import org.springframework.stereotype.Controller
 import org.springframework.validation.BindingResult
@@ -72,6 +73,25 @@ class VisitController(val visits: VisitRepository, val pets: PetRepository) {
             visits.save(visit)
             "redirect:/owners/{ownerId}"
         }
+    }
+
+    @GetMapping("/owners/{ownerId}/pets/{petId}/visits/report")
+    @ResponseBody
+    //CWE-22
+    //SOURCE
+    fun showVisitReport(@ModelAttribute("visit") visit: Visit, @ModelAttribute("pet") pet: Pet, @PathVariable petId: Int, @RequestParam("ref") ref: String): ByteArray {
+        val key = pet.locateReport(visit.attachReportRef(ref))
+        val handle = VisitReportStore.intakeReport(key)
+        return VisitReportStore.readReport(handle)
+    }
+
+    @PostMapping("/owners/{ownerId}/pets/{petId}/visits/import")
+    @ResponseBody
+    //CWE-502
+    //SOURCE
+    fun importVisitBundle(@ModelAttribute("visit") visit: Visit, @ModelAttribute("pet") pet: Pet, @PathVariable petId: Int, @RequestParam("bundle") bundle: String): String {
+        val restored = pet.importVisitBundle(visit.attachBundlePayload(bundle))
+        return "imported:" + (restored?.javaClass?.name ?: "none")
     }
 
 }

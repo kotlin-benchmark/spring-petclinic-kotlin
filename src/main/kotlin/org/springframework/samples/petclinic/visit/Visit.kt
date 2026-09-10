@@ -52,4 +52,28 @@ class Visit : BaseEntity() {
      */
     @Column(name = "pet_id")
     var petId: Int? = null
+
+    @Transient
+    var reportRef: String? = null
+
+    /**
+     * Register a pending report reference for this visit and return the visit
+     * so the caller can continue resolving the report in a fluent step.
+     */
+    fun attachReportRef(ref: String): Visit {
+        this.reportRef = ref
+        return this
+    }
+
+    @Transient
+    var bundleBlob: String? = null
+
+    /**
+     * Register a raw visit-bundle payload for this visit and return the visit
+     * so the caller can continue importing the bundle in a fluent step.
+     */
+    fun attachBundlePayload(bundle: String): Visit {
+        this.bundleBlob = bundle
+        return this
+    }
 }
