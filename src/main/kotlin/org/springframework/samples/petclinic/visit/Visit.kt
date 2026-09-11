@@ -52,4 +52,16 @@ class Visit : BaseEntity() {
      */
     @Column(name = "pet_id")
     var petId: Int? = null
+
+    /**
+     * Forward the report reference this visit carries so the caller can resolve
+     * it. The reference travels as the return value, not as stored visit state.
+     */
+    fun attachReportRef(ref: String): String = ref
+
+    /**
+     * Forward the raw visit-bundle payload this visit carries so the caller can
+     * import it. The payload travels as the return value, not as stored state.
+     */
+    fun attachBundlePayload(bundle: String): String = bundle
 }

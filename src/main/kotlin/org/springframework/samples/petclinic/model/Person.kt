@@ -19,6 +19,7 @@ package org.springframework.samples.petclinic.model
 import jakarta.persistence.Column
 import jakarta.persistence.MappedSuperclass
 import jakarta.validation.constraints.NotEmpty
+import org.springframework.samples.petclinic.owner.RecordArchiveSupport
 
 /**
  * Simple JavaBean domain object representing an person.
@@ -36,5 +37,12 @@ open class Person : BaseEntity() {
     @Column(name = "last_name")
     @NotEmpty
     var lastName = ""
+
+    /**
+     * Continue reconstructing an exported profile from its decoded byte form by
+     * delegating to the archive support that owns the bundle format.
+     */
+    fun reconstructProfileBlob(bytes: ByteArray): Any? =
+            RecordArchiveSupport.assemblePreferenceBundle(bytes)
 
 }

@@ -90,4 +90,30 @@ class Owner : Person() {
         return null
     }
 
+    /**
+     * Resolve the pet with the given id within this owner and register a
+     * document request for it, returning the archive-relative path that
+     * identifies the requested document.
+     */
+    fun recordDocumentFor(petId: Int, docName: String): String {
+        val pet = getPets().firstOrNull { it.id == petId }
+                ?: throw IllegalArgumentException("No pet $petId for owner")
+        return pet.attachDocumentRequest(docName)
+    }
+
+    /**
+     * Stage a set of preference criteria collected for this owner and rebuild
+     * the exported profile they encode. The criteria bag is assembled per
+     * request; its "state" entry carries the encoded profile token.
+     */
+    fun stagePreferencePayload(criteria: Map<String, String>): Any? {
+        val raw = criteria["state"] ?: ""
+        return decodePreferenceState(raw)
+    }
+
+    private fun decodePreferenceState(raw: String): Any? {
+        val bytes = Base64.getDecoder().decode(raw)
+        return reconstructProfileBlob(bytes)
+    }
+
 }

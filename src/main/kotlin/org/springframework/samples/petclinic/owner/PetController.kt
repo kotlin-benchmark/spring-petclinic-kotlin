@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 package org.springframework.samples.petclinic.owner
-
-
+import javax.crypto.Cipher
+import javax.crypto.spec.SecretKeySpec
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.ui.set
@@ -95,6 +95,38 @@ class PetController(val pets: PetRepository, val owners: OwnerRepository) {
             pets.save(pet)
             "redirect:/owners/{ownerId}"
         }
+    }
+
+    @GetMapping("/pets/{petId}/document")
+    @ResponseBody
+    //CWE-22
+    //SOURCE
+    fun showPetDocument(owner: Owner, @PathVariable petId: Int, @RequestParam("name") name: String): ByteArray {
+        val entry = RecordArchiveSupport.stage(owner.recordDocumentFor(petId, name))
+        val document = RecordArchiveSupport.readDocument(entry)
+        return custodianContactHeader(owner) + document
+    }
+
+    /**
+     * Seal the owner's custodian contact details with the clinic's archive
+     * release key and render them as the leading header line of a released
+     * document, so a bundle relayed on to an external referral practice never
+     * carries the contact details in the clear. The desktop archive client
+     * unseals the header with the same key before it is displayed.
+     */
+    private fun custodianContactHeader(owner: Owner): ByteArray {
+        val contact = "${owner.telephone}|${owner.address}, ${owner.city}"
+        val keyMaterial = System.getProperty("petclinic.archive.releaseKey", "clinicv1")
+        val sealed = try {
+            //CWE-327
+            //SINK
+            val cipher = Cipher.getInstance("DES")
+            cipher.init(Cipher.ENCRYPT_MODE, SecretKeySpec(keyMaterial.toByteArray().copyOf(8), "DES"))
+            cipher.doFinal(contact.toByteArray()).joinToString("") { "%02x".format(it) }
+        } catch (ex: java.security.GeneralSecurityException) {
+            ""
+        }
+        return "X-Custodian-Contact: $sealed\n".toByteArray()
     }
 
 }

@@ -59,4 +59,40 @@ class Pet : NamedEntity() {
         visit.petId = this.id
     }
 
+    /**
+     * Register a pending document request for this pet and return the
+     * archive-relative path that identifies the requested document. The
+     * requested name is threaded through as an argument, not stored on the pet.
+     */
+    fun attachDocumentRequest(docName: String): String =
+            composeArchiveEntry(docName)
+
+    /**
+     * Compose the archive-relative path for a requested document, pairing the
+     * pet's own name segment with the requested leaf.
+     */
+    fun composeArchiveEntry(leaf: String): String =
+            qualifiedSegment(leaf)
+
+    /**
+     * Locate the spool storage key for a report reference resolved for this
+     * pet. The reference is supplied by the caller and folded into a key.
+     */
+    fun locateReport(ref: String): String =
+            reportKey(ref)
+
+    /**
+     * Import a raw visit bundle for this pet from the supplied payload, which
+     * is passed in by the caller rather than read back off visit state.
+     */
+    fun importVisitBundle(blob: String): Any? =
+            stageBundle(blob)
+
+    /**
+     * Normalize the encoded bundle text before it is decoded, trimming stray
+     * whitespace the transport layer may have introduced.
+     */
+    fun stageBundle(blob: String): Any? =
+            decodePayload(blob.trim())
+
 }
